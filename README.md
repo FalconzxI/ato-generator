@@ -1,2 +1,0 @@
-# ato-generator
-Generazione ATO
