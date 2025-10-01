@@ -1,6 +1,6 @@
 module.exports = {
   plugins: {
-    '@tailwindcss/postcss': {}, // <-- MODIFICA QUESTA RIGA
+    '@tailwindcss/postcss': {}, // <-- LA MODIFICA DECISIVA
     autoprefixer: {},
   },
 };
