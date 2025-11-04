@@ -86,13 +86,24 @@ const globalStyles = `
   /* --- Stili per la Tabella --- */
   .table-wrapper { overflow-x: auto; }
   .table { width: 100%; border-collapse: collapse; }
-  .table th, .table td { padding: 12px 16px; text-align: left; font-size: 0.875rem; } /* Ridotto font-size per più spazio */
+  .table th, .table td { padding: 12px 16px; text-align: left; font-size: 0.875rem; }
   .table thead { background-color: #334155; }
   .table th { font-weight: 600; }
   .table tbody tr { border-bottom: 1px solid #334155; }
   .table tbody tr:hover { background-color: #283344; }
-  .table .callsign { color: #60a5fa; font-weight: 500; }
   .table .monospace { font-family: monospace; }
+  
+  /* --- NUOVO: Stile per il Callsign cliccabile --- */
+  .table .callsign {
+    color: #60a5fa;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: text-decoration 0.2s;
+  }
+  .table .callsign:hover {
+    text-decoration: underline;
+  }
   
   /* --- Stili per il Tooltip delle Note (su Click) --- */
   .note-cell {
@@ -142,24 +153,13 @@ export default function App() {
   const [missionTitle, setMissionTitle] = useState('Air Tasking Order');
   const [activeTooltipId, setActiveTooltipId] = useState(null);
 
-  // Aggiunto 'airbase' allo stato iniziale del form
   const [formData, setFormData] = useState({
-    callsign: '',
-    aircraft: '',
-    airbase: '', // <-- NUOVO CAMPO
-    task: '',
-    ett: '',
-    tot: '',
-    rtb: '',
-    roe: '',
-    freq: '',
-    notes: ''
+    callsign: '', aircraft: '', airbase: '', task: '', ett: '', tot: '', rtb: '', roe: '', freq: '', notes: ''
   });
 
   const handleInputChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.value }); };
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Aggiunta la validazione per 'airbase'
     if (!formData.callsign || !formData.aircraft || !formData.airbase || !formData.task || !formData.ett || !formData.tot || !formData.rtb || !formData.roe || !formData.freq) {
       alert('Compila tutti i campi obbligatori');
       return;
@@ -171,20 +171,28 @@ export default function App() {
       const newPackage = { ...formData, id: Date.now() };
       setPackages([...packages, newPackage]);
     }
-    // Aggiunto 'airbase' al reset del form
     setFormData({ callsign: '', aircraft: '', airbase: '', task: '', ett: '', tot: '', rtb: '', roe: '', freq: '', notes: '' });
   };
   const handleEdit = (pkg) => { setFormData(pkg); setEditingId(pkg.id); };
   const handleDelete = (id) => { setPackages(packages.filter(pkg => pkg.id !== id)); };
   const cancelEdit = () => {
     setEditingId(null);
-    // Aggiunto 'airbase' al reset del form in caso di annullamento
     setFormData({ callsign: '', aircraft: '', airbase: '', task: '', ett: '', tot: '', rtb: '', roe: '', freq: '', notes: '' });
   };
   const exportToPDF = () => { window.print(); };
 
   const handleTooltipToggle = (packageId) => {
     setActiveTooltipId(activeTooltipId === packageId ? null : packageId);
+  };
+
+  // --- NUOVO: Funzione per duplicare una riga ---
+  const handleDuplicate = (pkgToDuplicate) => {
+    // Assicurati che non siamo in modalità di modifica
+    setEditingId(null);
+    // Popola il form con i dati del pacchetto da duplicare
+    setFormData(pkgToDuplicate);
+    // Scorre la pagina in cima per mostrare il form compilato
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -207,10 +215,7 @@ export default function App() {
         <div className="form-grid">
            <div><label className="form-label">Callsign</label><input type="text" name="callsign" value={formData.callsign} onChange={handleInputChange} placeholder="es. VIPER 1-1" className="form-input" /></div>
            <div><label className="form-label">Aeromobile</label><input type="text" name="aircraft" value={formData.aircraft} onChange={handleInputChange} placeholder="es. F-16C" className="form-input" /></div>
-           
-           {/* --- NUOVO CAMPO "AIRBASE" --- */}
            <div><label className="form-label">Airbase</label><input type="text" name="airbase" value={formData.airbase} onChange={handleInputChange} placeholder="es. Aviano AB" className="form-input" /></div>
-
            <div><label className="form-label">Task/Obiettivo</label><input type="text" name="task" value={formData.task} onChange={handleInputChange} placeholder="es. CAP / SEAD / CAS" className="form-input" /></div>
            <div><label className="form-label">ETT (Decollo)</label><input type="time" name="ett" value={formData.ett} onChange={handleInputChange} className="form-input" /></div>
            <div><label className="form-label">TOT (Time On Target)</label><input type="time" name="tot" value={formData.tot} onChange={handleInputChange} className="form-input" /></div>
@@ -244,14 +249,13 @@ export default function App() {
         ) : (
           <div className="table-wrapper">
             <table className="table">
-              {/* --- AGGIUNTA COLONNA "AIRBASE" --- */}
               <thead><tr><th>Callsign</th><th>Aeromobile</th><th>Airbase</th><th>Task/Obiettivo</th><th>ETT</th><th>TOT</th><th>RTB</th><th>ROE</th><th>Freq/Ente</th><th style={{ textAlign: 'center' }}>Note</th><th style={{ textAlign: 'center' }} className="no-print">Azioni</th></tr></thead>
               <tbody>
                 {packages.map((pkg) => (
                   <tr key={pkg.id}>
-                    <td className="callsign">{pkg.callsign}</td>
+                    {/* --- MODIFICATO: Callsign cliccabile per duplicare --- */}
+                    <td className="callsign" onClick={() => handleDuplicate(pkg)} title="Copia dati nel form">{pkg.callsign}</td>
                     <td>{pkg.aircraft}</td>
-                    {/* --- AGGIUNTA CELLA "AIRBASE" --- */}
                     <td>{pkg.airbase}</td>
                     <td>{pkg.task}</td>
                     <td className="monospace">{pkg.ett}</td>
